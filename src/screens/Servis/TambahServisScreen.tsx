@@ -6,7 +6,10 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
+  Platform,
 } from "react-native";
+
+import DateTimePicker from "@react-native-community/datetimepicker";
 
 import styles from "./TambahServis.styles";
 
@@ -34,6 +37,9 @@ export default function TambahServisScreen({
   const [tanggal, setTanggal] =
     useState("");
 
+  const [showDatePicker, setShowDatePicker] =
+    useState(false);
+
   const [kilometer, setKilometer] =
     useState("");
 
@@ -49,27 +55,69 @@ export default function TambahServisScreen({
         vehicle.id === kendaraanId
     );
 
-  const simpanServis = () => {
+  const handleTanggalChange = (
+    event: any,
+    selectedDate?: Date
+  ) => {
+    if (Platform.OS === "android") {
+      setShowDatePicker(false);
+    }
+
+    if (selectedDate) {
+      const hari = String(
+        selectedDate.getDate()
+      ).padStart(2, "0");
+
+      const bulan = String(
+        selectedDate.getMonth() + 1
+      ).padStart(2, "0");
+
+      const tahun =
+        selectedDate.getFullYear();
+
+      setTanggal(
+        `${tahun}-${bulan}-${hari}`
+      );
+    }
+  };
+
+  const getTanggalDisplay = () => {
+    if (!tanggal) {
+      return "Pilih tanggal servis";
+    }
+
+    const bagian = tanggal.split("-");
+
+    if (bagian.length !== 3) {
+      return tanggal;
+    }
+
+    return `${bagian[2]}/${bagian[1]}/${bagian[0]}`;
+  };
+
+  const simpanServis = async () => {
     if (
       !kendaraanId ||
       !jenisServis.trim() ||
-      !tanggal.trim() ||
+      !tanggal ||
       !kilometer.trim()
     ) {
       return;
     }
 
-    addService({
+    const berhasil = await addService({
       kendaraanId,
       jenisServis:
         jenisServis.trim(),
-      tanggal: tanggal.trim(),
+      tanggal,
       kilometer: Number(kilometer),
       biaya: Number(biaya) || 0,
       catatan: catatan.trim(),
     });
 
-    navigation.goBack();
+    if (berhasil) {
+      navigation.goBack();
+    }
   };
 
   return (
@@ -197,13 +245,65 @@ export default function TambahServisScreen({
             Tanggal Servis *
           </Text>
 
-          <TextInput
-            style={styles.input}
-            placeholder="Contoh: 10/09/2026"
-            placeholderTextColor="#999999"
-            value={tanggal}
-            onChangeText={setTanggal}
-          />
+          {Platform.OS === "web" ? (
+            <View style={styles.input}>
+              <input
+                type="date"
+                value={tanggal}
+                onChange={(event) =>
+                  setTanggal(
+                    event.target.value
+                  )
+                }
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  border: "none",
+                  outline: "none",
+                  backgroundColor:
+                    "transparent",
+                  fontSize: 16,
+                  color: "#222222",
+                }}
+              />
+            </View>
+          ) : (
+            <>
+              <TouchableOpacity
+                style={styles.input}
+                onPress={() =>
+                  setShowDatePicker(true)
+                }
+              >
+                <Text
+                  style={
+                    tanggal
+                      ? styles.dropdownText
+                      : styles.dropdownPlaceholder
+                  }
+                >
+                  {getTanggalDisplay()}
+                </Text>
+              </TouchableOpacity>
+
+              {showDatePicker && (
+                <DateTimePicker
+                  value={
+                    tanggal
+                      ? new Date(
+                          `${tanggal}T00:00:00`
+                        )
+                      : new Date()
+                  }
+                  mode="date"
+                  display="default"
+                  onChange={
+                    handleTanggalChange
+                  }
+                />
+              )}
+            </>
+          )}
 
           <Text style={styles.label}>
             Kilometer *

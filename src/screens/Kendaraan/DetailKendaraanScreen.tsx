@@ -1,11 +1,13 @@
 import React, { useState } from "react";
-
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
+  Platform,
   Alert,
+  Modal,
+  ActivityIndicator,
 } from "react-native";
 
 import {
@@ -25,13 +27,19 @@ export default function DetailKendaraanScreen() {
     vehicles,
     services,
     reminders,
+    fuelRecords,
     deleteVehicle,
   } = useApp();
 
-  const [menuVisible, setMenuVisible] = useState(false);
+  const [deleteModalVisible, setDeleteModalVisible] =
+    useState(false);
+
+  const [deleting, setDeleting] = useState(false);
 
   const vehicle = vehicles.find(
-    (item) => item.id === route.params?.vehicleId
+    (item) =>
+      String(item.id) ===
+      String(route.params?.vehicleId)
   );
 
   if (!vehicle) {
@@ -45,43 +53,106 @@ export default function DetailKendaraanScreen() {
   }
 
   const vehicleServices = services.filter(
-    (item) => item.kendaraanId === vehicle.id
+    (item) =>
+      String(item.kendaraanId) ===
+      String(vehicle.id)
   );
 
   const vehicleReminders = reminders.filter(
-    (item) => item.kendaraanId === vehicle.id
+    (item) =>
+      String(item.kendaraanId) ===
+      String(vehicle.id)
+  );
+
+  const vehicleFuelRecords = fuelRecords.filter(
+    (item) =>
+      String(item.kendaraanId) ===
+      String(vehicle.id)
   );
 
   const handleDelete = () => {
-    Alert.alert(
-      "Hapus Kendaraan",
-      `Apakah kamu yakin ingin menghapus ${vehicle.namaKendaraan}? Data servis dan pengingat kendaraan ini juga akan dihapus.`,
-      [
-        {
-          text: "Batal",
-          style: "cancel",
-        },
-        {
-          text: "Hapus",
-          style: "destructive",
-          onPress: () => {
-            deleteVehicle(vehicle.id);
-            navigation.goBack();
-          },
-        },
-      ]
+    console.log(
+      "TOMBOL HAPUS KENDARAAN DIKLIK:",
+      vehicle.id
     );
+
+    setDeleteModalVisible(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      setDeleting(true);
+
+      console.log(
+        "MULAI HAPUS KENDARAAN:",
+        vehicle.id
+      );
+
+      const success = await deleteVehicle(
+        String(vehicle.id)
+      );
+
+      console.log(
+        "HASIL DELETE KENDARAAN:",
+        success
+      );
+
+      if (success) {
+        setDeleteModalVisible(false);
+
+        if (Platform.OS === "web") {
+          window.alert(
+            "Kendaraan berhasil dihapus."
+          );
+        }
+
+        navigation.goBack();
+      } else {
+        if (Platform.OS === "web") {
+          window.alert(
+            "Kendaraan gagal dihapus dari database."
+          );
+        } else {
+          Alert.alert(
+            "Gagal",
+            "Kendaraan gagal dihapus dari database."
+          );
+        }
+      }
+    } catch (error) {
+      console.error(
+        "ERROR DELETE KENDARAAN:",
+        error
+      );
+
+      if (Platform.OS === "web") {
+        window.alert(
+          "Terjadi kesalahan saat menghapus kendaraan."
+        );
+      } else {
+        Alert.alert(
+          "Gagal",
+          "Terjadi kesalahan saat menghapus kendaraan."
+        );
+      }
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
     <View style={styles.container}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={
+          styles.scrollContent
+        }
       >
         <View style={styles.header}>
           <TouchableOpacity
-            onPress={() => navigation.goBack()}
+            onPress={() =>
+              navigation.goBack()
+            }
           >
             <Text style={styles.backButton}>
               ‹
@@ -94,69 +165,24 @@ export default function DetailKendaraanScreen() {
             </Text>
 
             <Text style={styles.subtitle}>
-              Informasi kendaraan
+              Informasi kendaraan dan riwayat
             </Text>
           </View>
-
-          <TouchableOpacity
-            style={styles.moreButton}
-            onPress={() =>
-              setMenuVisible(!menuVisible)
-            }
-          >
-            <Text style={styles.moreButtonText}>
-              ⋮
-            </Text>
-          </TouchableOpacity>
         </View>
-
-        {menuVisible && (
-          <View style={styles.menu}>
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => {
-                setMenuVisible(false);
-
-                navigation.navigate(
-                  "EditKendaraan",
-                  {
-                    vehicleId: vehicle.id,
-                  }
-                );
-              }}
-            >
-              <Text style={styles.menuText}>
-                Edit Kendaraan
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => {
-                setMenuVisible(false);
-                handleDelete();
-              }}
-            >
-              <Text style={styles.deleteMenuText}>
-                Hapus Kendaraan
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
 
         <View style={styles.mainCard}>
           <View style={styles.bigIcon}>
-            <Text style={styles.carEmoji}>
+            <Text style={styles.vehicleEmoji}>
               🚗
             </Text>
           </View>
 
-          <Text style={styles.vehicleName}>
+          <Text style={styles.vehicleTitle}>
             {vehicle.namaKendaraan}
           </Text>
 
-          <Text style={styles.vehiclePlate}>
-            {vehicle.nomorPolisi}
+          <Text style={styles.vehicleBrand}>
+            {vehicle.merek}
           </Text>
         </View>
 
@@ -171,7 +197,7 @@ export default function DetailKendaraanScreen() {
             </Text>
 
             <Text style={styles.infoValue}>
-              {vehicle.merek}
+              {vehicle.merek || "-"}
             </Text>
           </View>
 
@@ -191,7 +217,7 @@ export default function DetailKendaraanScreen() {
             </Text>
 
             <Text style={styles.infoValue}>
-              {vehicle.nomorPolisi}
+              {vehicle.nomorPolisi || "-"}
             </Text>
           </View>
 
@@ -207,130 +233,224 @@ export default function DetailKendaraanScreen() {
               km
             </Text>
           </View>
-
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>
-              Konsumsi BBM
-            </Text>
-
-            <Text style={styles.infoValue}>
-              {vehicle.konsumsiBbm || "-"}
-            </Text>
-          </View>
-
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>
-              Jatuh Tempo STNK
-            </Text>
-
-            <Text style={styles.infoValue}>
-              {vehicle.tanggalStnk || "-"}
-            </Text>
-          </View>
         </View>
 
-        <View style={styles.infoCard}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>
-              Riwayat Servis
-            </Text>
+        <TouchableOpacity
+          style={styles.editButton}
+          onPress={() =>
+            navigation.navigate(
+              "EditKendaraan",
+              {
+                vehicleId:
+                  String(vehicle.id),
+              }
+            )
+          }
+        >
+          <Text style={styles.editButtonText}>
+            Edit Kendaraan
+          </Text>
+        </TouchableOpacity>
 
-            <Text style={styles.countText}>
-              {vehicleServices.length}
-            </Text>
-          </View>
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={handleDelete}
+        >
+          <Text style={styles.deleteButtonText}>
+            Hapus Kendaraan
+          </Text>
+        </TouchableOpacity>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>
+            Riwayat Servis
+          </Text>
 
           {vehicleServices.length === 0 ? (
-            <Text style={styles.emptyText}>
-              Belum ada riwayat servis
-            </Text>
+            <View style={styles.emptyCard}>
+              <Text style={styles.emptyText}>
+                Belum ada riwayat servis
+              </Text>
+            </View>
           ) : (
             vehicleServices.map((service) => (
               <TouchableOpacity
                 key={service.id}
-                style={styles.historyItem}
+                style={styles.dataCard}
                 onPress={() =>
                   navigation.navigate(
                     "DetailServis",
                     {
-                      serviceId: service.id,
+                      serviceId:
+                        service.id,
                     }
                   )
                 }
               >
-                <View>
-                  <Text style={styles.historyTitle}>
-                    {service.jenisServis}
-                  </Text>
+                <Text style={styles.dataTitle}>
+                  {service.jenisServis}
+                </Text>
 
-                  <Text style={styles.historyDetail}>
-                    {service.tanggal} •{" "}
-                    {service.kilometer.toLocaleString(
-                      "id-ID"
-                    )}{" "}
-                    km
-                  </Text>
-                </View>
+                <Text style={styles.dataText}>
+                  {service.tanggal}
+                </Text>
 
-                <Text style={styles.arrow}>
-                  ›
+                <Text style={styles.dataText}>
+                  {service.kilometer.toLocaleString(
+                    "id-ID"
+                  )}{" "}
+                  km
+                </Text>
+
+                <Text style={styles.dataText}>
+                  Rp{" "}
+                  {Number(
+                    service.biaya
+                  ).toLocaleString("id-ID")}
                 </Text>
               </TouchableOpacity>
             ))
           )}
         </View>
 
-        <View style={styles.infoCard}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>
-              Pengingat
-            </Text>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>
+            Riwayat BBM
+          </Text>
 
-            <Text style={styles.countText}>
-              {vehicleReminders.length}
-            </Text>
-          </View>
+          {vehicleFuelRecords.length === 0 ? (
+            <View style={styles.emptyCard}>
+              <Text style={styles.emptyText}>
+                Belum ada riwayat BBM
+              </Text>
+            </View>
+          ) : (
+            vehicleFuelRecords.map((fuel) => (
+              <View
+                key={fuel.id}
+                style={styles.dataCard}
+              >
+                <Text style={styles.dataTitle}>
+                  {fuel.jenisBbm || "BBM"}
+                </Text>
+
+                <Text style={styles.dataText}>
+                  {fuel.tanggal}
+                </Text>
+
+                <Text style={styles.dataText}>
+                  {fuel.jumlahLiter} liter
+                </Text>
+
+                <Text style={styles.dataText}>
+                  Rp{" "}
+                  {Number(
+                    fuel.totalHarga
+                  ).toLocaleString("id-ID")}
+                </Text>
+              </View>
+            ))
+          )}
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>
+            Pengingat
+          </Text>
 
           {vehicleReminders.length === 0 ? (
-            <Text style={styles.emptyText}>
-              Belum ada pengingat
-            </Text>
+            <View style={styles.emptyCard}>
+              <Text style={styles.emptyText}>
+                Belum ada pengingat
+              </Text>
+            </View>
           ) : (
             vehicleReminders.map((reminder) => (
-              <TouchableOpacity
+              <View
                 key={reminder.id}
-                style={styles.historyItem}
-                onPress={() =>
-                  navigation.navigate(
-                    "DetailPengingat",
-                    {
-                      reminderId: reminder.id,
-                    }
-                  )
-                }
+                style={styles.dataCard}
               >
-                <View>
-                  <Text style={styles.historyTitle}>
-                    {reminder.jenis}
-                  </Text>
-
-                  <Text style={styles.historyDetail}>
-                    Target{" "}
-                    {reminder.targetKilometer.toLocaleString(
-                      "id-ID"
-                    )}{" "}
-                    km
-                  </Text>
-                </View>
-
-                <Text style={styles.arrow}>
-                  ›
+                <Text style={styles.dataTitle}>
+                  {reminder.judul}
                 </Text>
-              </TouchableOpacity>
+
+                <Text style={styles.dataText}>
+                  {reminder.tanggal}
+                </Text>
+
+                <Text style={styles.dataText}>
+                  {reminder.deskripsi || "-"}
+                </Text>
+
+                <Text style={styles.dataText}>
+                  Status: {reminder.status}
+                </Text>
+              </View>
             ))
           )}
         </View>
       </ScrollView>
+
+      <Modal
+        visible={deleteModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() =>
+          setDeleteModalVisible(false)
+        }
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>
+              Hapus Kendaraan?
+            </Text>
+
+            <Text style={styles.modalText}>
+              Apakah kamu yakin ingin menghapus
+              kendaraan "{vehicle.namaKendaraan}"?
+              {"\n\n"}
+              Data kendaraan beserta data yang
+              terkait akan dihapus dari database.
+            </Text>
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() =>
+                  setDeleteModalVisible(false)
+                }
+                disabled={deleting}
+              >
+                <Text
+                  style={styles.cancelButtonText}
+                >
+                  Batal
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.confirmButton}
+                onPress={confirmDelete}
+                disabled={deleting}
+              >
+                {deleting ? (
+                  <ActivityIndicator
+                    color="#FFFFFF"
+                  />
+                ) : (
+                  <Text
+                    style={
+                      styles.confirmButtonText
+                    }
+                  >
+                    Hapus
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }

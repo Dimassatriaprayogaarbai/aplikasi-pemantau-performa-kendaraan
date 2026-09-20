@@ -1,11 +1,11 @@
 import React, { useState } from "react";
-
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
-  Alert,
+  Modal,
+  ActivityIndicator,
 } from "react-native";
 
 import {
@@ -18,11 +18,8 @@ import { useApp } from "../../context/AppContext";
 import styles from "./DetailPengingat.styles";
 
 export default function DetailPengingatScreen() {
-  const navigation =
-    useNavigation<any>();
-
-  const route =
-    useRoute<any>();
+  const navigation = useNavigation<any>();
+  const route = useRoute<any>();
 
   const {
     vehicles,
@@ -30,34 +27,31 @@ export default function DetailPengingatScreen() {
     deleteReminder,
   } = useApp();
 
-  const [
-    menuVisible,
-    setMenuVisible,
-  ] = useState(false);
+  const [deleteModalVisible, setDeleteModalVisible] =
+    useState(false);
 
-  const reminder =
-    reminders.find(
-      (item) =>
-        item.id ===
-        route.params?.reminderId
-    );
+  const [deleting, setDeleting] = useState(false);
 
-  const vehicle =
-    reminder
-      ? vehicles.find(
-          (item) =>
-            item.id ===
-            reminder.kendaraanId
-        )
-      : vehicles.find(
-          (item) =>
-            item.id ===
-            route.params?.vehicleId
-        );
+  const reminder = reminders.find(
+    (item) =>
+      String(item.id) ===
+      String(route.params?.reminderId)
+  );
+
+  const vehicle = reminder
+    ? vehicles.find(
+        (item) =>
+          String(item.id) ===
+          String(reminder.kendaraanId)
+      )
+    : vehicles.find(
+        (item) =>
+          String(item.id) ===
+          String(route.params?.vehicleId)
+      );
 
   const isStnk =
-    route.params?.reminderType ===
-    "stnk";
+    route.params?.reminderType === "stnk";
 
   if (!vehicle) {
     return (
@@ -74,27 +68,33 @@ export default function DetailPengingatScreen() {
       return;
     }
 
-    Alert.alert(
-      "Hapus Pengingat",
-      `Apakah kamu yakin ingin menghapus pengingat ${reminder.jenis}?`,
-      [
-        {
-          text: "Batal",
-          style: "cancel",
-        },
-        {
-          text: "Hapus",
-          style: "destructive",
-          onPress: () => {
-            deleteReminder(
-              reminder.id
-            );
+    setDeleteModalVisible(true);
+  };
 
-            navigation.goBack();
-          },
-        },
-      ]
-    );
+  const confirmDelete = async () => {
+    if (!reminder) {
+      return;
+    }
+
+    try {
+      setDeleting(true);
+
+      const success = await deleteReminder(
+        String(reminder.id)
+      );
+
+      if (success) {
+        setDeleteModalVisible(false);
+        navigation.goBack();
+      }
+    } catch (error) {
+      console.error(
+        "ERROR DELETE PENGINGAT:",
+        error
+      );
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
@@ -125,68 +125,7 @@ export default function DetailPengingatScreen() {
               Informasi pengingat kendaraan
             </Text>
           </View>
-
-          {!isStnk && reminder && (
-            <TouchableOpacity
-              style={styles.moreButton}
-              onPress={() =>
-                setMenuVisible(
-                  !menuVisible
-                )
-              }
-            >
-              <Text
-                style={
-                  styles.moreButtonText
-                }
-              >
-                ⋮
-              </Text>
-            </TouchableOpacity>
-          )}
         </View>
-
-        {menuVisible &&
-          reminder && (
-            <View style={styles.menu}>
-              <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => {
-                  setMenuVisible(false);
-
-                  navigation.navigate(
-                    "EditPengingat",
-                    {
-                      reminderId:
-                        reminder.id,
-                    }
-                  );
-                }}
-              >
-                <Text
-                  style={styles.menuText}
-                >
-                  Edit Pengingat
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => {
-                  setMenuVisible(false);
-                  handleDelete();
-                }}
-              >
-                <Text
-                  style={
-                    styles.deleteMenuText
-                  }
-                >
-                  Hapus Pengingat
-                </Text>
-              </TouchableOpacity>
-            </View>
-          )}
 
         <View style={styles.mainCard}>
           <View style={styles.bigIcon}>
@@ -198,7 +137,7 @@ export default function DetailPengingatScreen() {
           <Text style={styles.reminderTitle}>
             {isStnk
               ? "Perpanjang STNK"
-              : reminder?.jenis}
+              : reminder?.judul || "Pengingat"}
           </Text>
 
           <Text style={styles.vehicleName}>
@@ -227,7 +166,7 @@ export default function DetailPengingatScreen() {
             </Text>
 
             <Text style={styles.infoValue}>
-              {vehicle.nomorPolisi}
+              {vehicle.nomorPolisi || "-"}
             </Text>
           </View>
 
@@ -250,7 +189,7 @@ export default function DetailPengingatScreen() {
                 </Text>
 
                 <Text style={styles.infoValue}>
-                  {reminder?.jenis}
+                  {reminder?.judul || "-"}
                 </Text>
               </View>
 
@@ -260,9 +199,11 @@ export default function DetailPengingatScreen() {
                 </Text>
 
                 <Text style={styles.infoValue}>
-                  {reminder?.targetKilometer.toLocaleString(
-                    "id-ID"
-                  )}{" "}
+                  {reminder?.kilometerTarget
+                    ? reminder.kilometerTarget.toLocaleString(
+                        "id-ID"
+                      )
+                    : "-"}{" "}
                   km
                 </Text>
               </View>
@@ -273,8 +214,7 @@ export default function DetailPengingatScreen() {
                 </Text>
 
                 <Text style={styles.infoValue}>
-                  {reminder?.targetTanggal ||
-                    "-"}
+                  {reminder?.tanggal || "-"}
                 </Text>
               </View>
 
@@ -290,10 +230,120 @@ export default function DetailPengingatScreen() {
                   km
                 </Text>
               </View>
+
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>
+                  Deskripsi
+                </Text>
+
+                <Text style={styles.infoValue}>
+                  {reminder?.deskripsi || "-"}
+                </Text>
+              </View>
+
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>
+                  Status
+                </Text>
+
+                <Text style={styles.infoValue}>
+                  {reminder?.status || "-"}
+                </Text>
+              </View>
             </>
           )}
         </View>
+
+        {!isStnk && reminder && (
+          <>
+            <TouchableOpacity
+              style={styles.editButton}
+              onPress={() =>
+                navigation.navigate(
+                  "EditPengingat",
+                  {
+                    reminderId:
+                      reminder.id,
+                  }
+                )
+              }
+            >
+              <Text style={styles.editButtonText}>
+                Edit Pengingat
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.deleteButton}
+              onPress={handleDelete}
+            >
+              <Text
+                style={styles.deleteButtonText}
+              >
+                Hapus Pengingat
+              </Text>
+            </TouchableOpacity>
+          </>
+        )}
       </ScrollView>
+
+      <Modal
+        visible={deleteModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() =>
+          setDeleteModalVisible(false)
+        }
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>
+              Hapus Pengingat?
+            </Text>
+
+            <Text style={styles.modalText}>
+              Apakah kamu yakin ingin menghapus
+              pengingat "{reminder?.judul}"?
+            </Text>
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() =>
+                  setDeleteModalVisible(false)
+                }
+                disabled={deleting}
+              >
+                <Text
+                  style={styles.cancelButtonText}
+                >
+                  Batal
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.confirmButton}
+                onPress={confirmDelete}
+                disabled={deleting}
+              >
+                {deleting ? (
+                  <ActivityIndicator
+                    color="#FFFFFF"
+                  />
+                ) : (
+                  <Text
+                    style={
+                      styles.confirmButtonText
+                    }
+                  >
+                    Hapus
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }

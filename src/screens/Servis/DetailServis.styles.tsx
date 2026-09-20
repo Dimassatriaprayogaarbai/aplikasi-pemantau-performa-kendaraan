@@ -162,6 +162,71 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 100,
   },
+
+  modalOverlay: {
+  flex: 1,
+  backgroundColor: "rgba(0,0,0,0.45)",
+  justifyContent: "center",
+  alignItems: "center",
+  padding: 24,
+},
+
+modalCard: {
+  width: "100%",
+  maxWidth: 400,
+  backgroundColor: "#FFFFFF",
+  borderRadius: 20,
+  padding: 24,
+},
+
+modalTitle: {
+  fontSize: 20,
+  fontWeight: "700",
+  color: "#222222",
+  marginBottom: 10,
+},
+
+modalText: {
+  fontSize: 15,
+  lineHeight: 22,
+  color: "#666666",
+  marginBottom: 24,
+},
+
+modalButtons: {
+  flexDirection: "row",
+  gap: 12,
+},
+
+cancelButton: {
+  flex: 1,
+  height: 48,
+  borderRadius: 12,
+  backgroundColor: "#F1F1F1",
+  justifyContent: "center",
+  alignItems: "center",
+},
+
+cancelButtonText: {
+  fontSize: 15,
+  fontWeight: "600",
+  color: "#555555",
+},
+
+confirmButton: {
+  flex: 1,
+  height: 48,
+  borderRadius: 12,
+  backgroundColor: "#DC2626",
+  justifyContent: "center",
+  alignItems: "center",
+},
+
+confirmButtonText: {
+  fontSize: 15,
+  fontWeight: "600",
+  color: "#FFFFFF",
+},
 });
 
 export default styles;

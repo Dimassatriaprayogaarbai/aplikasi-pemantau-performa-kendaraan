@@ -7,113 +7,80 @@ const styles = StyleSheet.create({
   },
 
   scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
+    paddingBottom: 30,
   },
 
   header: {
-    marginTop: 20,
-    marginBottom: 20,
+    height: 64,
+    backgroundColor: "#FFFFFF",
     flexDirection: "row",
     alignItems: "center",
+    borderBottomWidth: 1,
+    borderBottomColor: "#EEEEEE",
+    paddingHorizontal: 16,
   },
 
   backButton: {
-    fontSize: 40,
+    fontSize: 36,
     color: "#222222",
+    fontWeight: "300",
     lineHeight: 40,
-    marginRight: 12,
+    width: 40,
   },
 
   headerInfo: {
     flex: 1,
+    marginLeft: 8,
   },
 
   title: {
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: "700",
     color: "#222222",
   },
 
   subtitle: {
-    fontSize: 13,
+    fontSize: 12,
     color: "#777777",
-    marginTop: 5,
-  },
-
-  moreButton: {
-    width: 40,
-    height: 40,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  moreButtonText: {
-    fontSize: 28,
-    color: "#333333",
-  },
-
-  menu: {
-    position: "absolute",
-    right: 20,
-    top: 75,
-    width: 190,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    elevation: 6,
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    shadowOffset: {
-      width: 0,
-      height: 3,
-    },
-    zIndex: 10,
-  },
-
-  menuItem: {
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#EEEEEE",
-  },
-
-  menuText: {
-    fontSize: 14,
-    color: "#333333",
-  },
-
-  deleteMenuText: {
-    fontSize: 14,
-    color: "#EF4444",
-    fontWeight: "600",
+    marginTop: 2,
   },
 
   mainCard: {
     backgroundColor: "#FFFFFF",
+    marginHorizontal: 16,
+    marginTop: 16,
     borderRadius: 18,
-    padding: 25,
+    padding: 22,
     alignItems: "center",
-    marginBottom: 15,
+    elevation: 2,
+    shadowColor: "#000000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.06,
+    shadowRadius: 5,
   },
 
   bigIcon: {
-    width: 75,
-    height: 75,
+    width: 76,
+    height: 76,
     borderRadius: 20,
-    backgroundColor: "#FFF4D6",
-    justifyContent: "center",
+    backgroundColor: "#FFF7E6",
     alignItems: "center",
-    marginBottom: 12,
+    justifyContent: "center",
+    marginBottom: 14,
   },
 
   reminderEmoji: {
-    fontSize: 36,
+    fontSize: 40,
   },
 
   reminderTitle: {
     fontSize: 21,
     fontWeight: "700",
     color: "#222222",
+    textAlign: "center",
   },
 
   vehicleName: {
@@ -124,8 +91,18 @@ const styles = StyleSheet.create({
 
   infoCard: {
     backgroundColor: "#FFFFFF",
+    marginHorizontal: 16,
+    marginTop: 12,
     borderRadius: 16,
     padding: 18,
+    elevation: 1,
+    shadowColor: "#000000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
   },
 
   sectionTitle: {
@@ -138,29 +115,127 @@ const styles = StyleSheet.create({
   infoRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingVertical: 11,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F0",
+    alignItems: "center",
+    paddingVertical: 9,
   },
 
   infoLabel: {
-    fontSize: 13,
+    fontSize: 14,
     color: "#777777",
+    flex: 1,
   },
 
   infoValue: {
-    fontSize: 13,
+    fontSize: 14,
     color: "#222222",
     fontWeight: "600",
-    maxWidth: "60%",
     textAlign: "right",
+    flex: 1,
+  },
+
+  editButton: {
+    marginHorizontal: 16,
+    marginTop: 20,
+    height: 50,
+    borderRadius: 12,
+    backgroundColor: "#F59E0B",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  editButtonText: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "700",
+  },
+
+  deleteButton: {
+    marginHorizontal: 16,
+    marginTop: 10,
+    height: 50,
+    borderRadius: 12,
+    backgroundColor: "#EF4444",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+
+  deleteButtonText: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "700",
   },
 
   notFound: {
     fontSize: 16,
     color: "#777777",
     textAlign: "center",
-    marginTop: 100,
+    marginTop: 50,
+  },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+
+  modalCard: {
+    width: "100%",
+    maxWidth: 400,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 18,
+    padding: 22,
+  },
+
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#222222",
+    marginBottom: 10,
+  },
+
+  modalText: {
+    fontSize: 14,
+    color: "#666666",
+    lineHeight: 21,
+    marginBottom: 20,
+  },
+
+  modalButtons: {
+    flexDirection: "row",
+    gap: 10,
+  },
+
+  cancelButton: {
+    flex: 1,
+    height: 46,
+    borderRadius: 10,
+    backgroundColor: "#EEEEEE",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  cancelButtonText: {
+    color: "#444444",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+
+  confirmButton: {
+    flex: 1,
+    height: 46,
+    borderRadius: 10,
+    backgroundColor: "#EF4444",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  confirmButtonText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "700",
   },
 });
 

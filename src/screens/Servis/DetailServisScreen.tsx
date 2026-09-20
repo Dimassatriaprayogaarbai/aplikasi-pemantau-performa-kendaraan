@@ -1,11 +1,11 @@
 import React, { useState } from "react";
-
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
-  Alert,
+  Modal,
+  ActivityIndicator,
 } from "react-native";
 
 import {
@@ -18,11 +18,8 @@ import { useApp } from "../../context/AppContext";
 import styles from "./DetailServis.styles";
 
 export default function DetailServisScreen() {
-  const navigation =
-    useNavigation<any>();
-
-  const route =
-    useRoute<any>();
+  const navigation = useNavigation<any>();
+  const route = useRoute<any>();
 
   const {
     vehicles,
@@ -30,13 +27,15 @@ export default function DetailServisScreen() {
     deleteService,
   } = useApp();
 
-  const [menuVisible, setMenuVisible] =
+  const [deleteModalVisible, setDeleteModalVisible] =
     useState(false);
+
+  const [deleting, setDeleting] = useState(false);
 
   const service = services.find(
     (item) =>
-      item.id ===
-      route.params?.serviceId
+      String(item.id) ===
+      String(route.params?.serviceId)
   );
 
   if (!service) {
@@ -51,47 +50,60 @@ export default function DetailServisScreen() {
 
   const vehicle = vehicles.find(
     (item) =>
-      item.id ===
-      service.kendaraanId
+      String(item.id) ===
+      String(service.kendaraanId)
   );
 
   const handleDelete = () => {
-    Alert.alert(
-      "Hapus Servis",
-      `Apakah kamu yakin ingin menghapus riwayat ${service.jenisServis}?`,
-      [
-        {
-          text: "Batal",
-          style: "cancel",
-        },
-        {
-          text: "Hapus",
-          style: "destructive",
-          onPress: () => {
-            deleteService(
-              service.id
-            );
-
-            navigation.goBack();
-          },
-        },
-      ]
+    console.log(
+      "TOMBOL HAPUS SERVIS DIKLIK:",
+      service.id
     );
+
+    setDeleteModalVisible(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      setDeleting(true);
+
+      console.log(
+        "MULAI HAPUS SERVIS:",
+        service.id
+      );
+
+      const berhasil = await deleteService(
+        String(service.id)
+      );
+
+      console.log(
+        "HASIL DELETE SERVIS:",
+        berhasil
+      );
+
+      if (berhasil) {
+        setDeleteModalVisible(false);
+        navigation.goBack();
+      }
+    } catch (error) {
+      console.error(
+        "ERROR DELETE SERVIS SCREEN:",
+        error
+      );
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
     <View style={styles.container}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={
-          styles.scrollContent
-        }
+        contentContainerStyle={styles.scrollContent}
       >
         <View style={styles.header}>
           <TouchableOpacity
-            onPress={() =>
-              navigation.goBack()
-            }
+            onPress={() => navigation.goBack()}
           >
             <Text style={styles.backButton}>
               ‹
@@ -104,66 +116,10 @@ export default function DetailServisScreen() {
             </Text>
 
             <Text style={styles.subtitle}>
-              Informasi riwayat servis
+              Informasi riwayat servis kendaraan
             </Text>
           </View>
-
-          <TouchableOpacity
-            style={styles.moreButton}
-            onPress={() =>
-              setMenuVisible(
-                !menuVisible
-              )
-            }
-          >
-            <Text
-              style={
-                styles.moreButtonText
-              }
-            >
-              ⋮
-            </Text>
-          </TouchableOpacity>
         </View>
-
-        {menuVisible && (
-          <View style={styles.menu}>
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => {
-                setMenuVisible(false);
-
-                navigation.navigate(
-                  "EditServis",
-                  {
-                    serviceId:
-                      service.id,
-                  }
-                );
-              }}
-            >
-              <Text style={styles.menuText}>
-                Edit Servis
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => {
-                setMenuVisible(false);
-                handleDelete();
-              }}
-            >
-              <Text
-                style={
-                  styles.deleteMenuText
-                }
-              >
-                Hapus Servis
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
 
         <View style={styles.mainCard}>
           <View style={styles.bigIcon}>
@@ -193,29 +149,7 @@ export default function DetailServisScreen() {
             </Text>
 
             <Text style={styles.infoValue}>
-              {vehicle?.namaKendaraan ||
-                "-"}
-            </Text>
-          </View>
-
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>
-              Nomor Polisi
-            </Text>
-
-            <Text style={styles.infoValue}>
-              {vehicle?.nomorPolisi ||
-                "-"}
-            </Text>
-          </View>
-
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>
-              Jenis Servis
-            </Text>
-
-            <Text style={styles.infoValue}>
-              {service.jenisServis}
+              {vehicle?.namaKendaraan || "-"}
             </Text>
           </View>
 
@@ -265,7 +199,117 @@ export default function DetailServisScreen() {
             </Text>
           </View>
         </View>
+
+        <TouchableOpacity
+          style={{
+            marginTop: 20,
+            height: 50,
+            borderRadius: 12,
+            backgroundColor: "#F59E0B",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+          onPress={() =>
+            navigation.navigate(
+              "EditServis",
+              {
+                serviceId: service.id,
+              }
+            )
+          }
+        >
+          <Text
+            style={{
+              color: "#FFFFFF",
+              fontSize: 15,
+              fontWeight: "700",
+            }}
+          >
+            Edit Servis
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={{
+            marginTop: 10,
+            height: 50,
+            borderRadius: 12,
+            backgroundColor: "#EF4444",
+            justifyContent: "center",
+            alignItems: "center",
+            marginBottom: 20,
+          }}
+          onPress={handleDelete}
+        >
+          <Text
+            style={{
+              color: "#FFFFFF",
+              fontSize: 15,
+              fontWeight: "700",
+            }}
+          >
+            Hapus Servis
+          </Text>
+        </TouchableOpacity>
       </ScrollView>
+
+      <Modal
+        visible={deleteModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() =>
+          setDeleteModalVisible(false)
+        }
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>
+              Hapus Servis?
+            </Text>
+
+            <Text style={styles.modalText}>
+              Apakah kamu yakin ingin menghapus
+              riwayat "{service.jenisServis}"?
+            </Text>
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() =>
+                  setDeleteModalVisible(false)
+                }
+                disabled={deleting}
+              >
+                <Text
+                  style={styles.cancelButtonText}
+                >
+                  Batal
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.confirmButton}
+                onPress={confirmDelete}
+                disabled={deleting}
+              >
+                {deleting ? (
+                  <ActivityIndicator
+                    color="#FFFFFF"
+                  />
+                ) : (
+                  <Text
+                    style={
+                      styles.confirmButtonText
+                    }
+                  >
+                    Hapus
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }

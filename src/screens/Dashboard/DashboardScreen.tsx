@@ -14,17 +14,25 @@ import styles from "./Dashboard.styles";
 
 export default function DashboardScreen() {
   const [menuVisible, setMenuVisible] = useState(false);
-  const [notificationVisible, setNotificationVisible] = useState(false);
+  const [notificationVisible, setNotificationVisible] =
+    useState(false);
 
   const navigation = useNavigation<any>();
 
-  const { vehicles, reminders } = useApp();
+  const {
+    vehicles,
+    services,
+    reminders,
+    fuelRecords,
+  } = useApp();
 
   const today = new Date();
 
   const dueReminders = reminders.filter((reminder) => {
     const vehicle = vehicles.find(
-      (item) => item.id === reminder.kendaraanId
+      (item) =>
+        String(item.id) ===
+        String(reminder.kendaraanId)
     );
 
     if (!vehicle) {
@@ -32,21 +40,31 @@ export default function DashboardScreen() {
     }
 
     const kilometerDue =
-      vehicle.kilometer >= reminder.targetKilometer;
-
-    const [day, month, year] =
-      reminder.targetTanggal.split("/").map(Number);
+      reminder.kilometerTarget !== undefined &&
+      reminder.kilometerTarget !== null &&
+      vehicle.kilometer >=
+        reminder.kilometerTarget;
 
     const targetDate = new Date(
-      year,
-      month - 1,
-      day
+      `${reminder.tanggal}T00:00:00`
     );
 
-    const dateDue = today >= targetDate;
+    const dateDue =
+      !isNaN(targetDate.getTime()) &&
+      today >= targetDate;
 
     return kilometerDue || dateDue;
   });
+
+  const latestServices = services
+    .slice()
+    .sort((a, b) => {
+      return (
+        new Date(b.tanggal).getTime() -
+        new Date(a.tanggal).getTime()
+      );
+    })
+    .slice(0, 2);
 
   return (
     <View style={styles.container}>
@@ -98,7 +116,7 @@ export default function DashboardScreen() {
 
           <View style={styles.statCard}>
             <Text style={styles.statNumber}>
-              3
+              {services.length}
             </Text>
 
             <Text style={styles.statLabel}>
@@ -133,49 +151,52 @@ export default function DashboardScreen() {
               </Text>
             </View>
           ) : (
-            reminders.slice(0, 2).map((reminder) => {
-              const vehicle = vehicles.find(
-                (item) =>
-                  item.id === reminder.kendaraanId
-              );
+            reminders
+              .slice(0, 2)
+              .map((reminder) => {
+                const vehicle = vehicles.find(
+                  (item) =>
+                    String(item.id) ===
+                    String(reminder.kendaraanId)
+                );
 
-              return (
-                <View
-                  key={reminder.id}
-                  style={styles.reminderCard}
-                >
-                  <View style={styles.iconBox}>
-                    <Text style={styles.icon}>
-                      🔧
-                    </Text>
+                return (
+                  <View
+                    key={reminder.id}
+                    style={styles.reminderCard}
+                  >
+                    <View style={styles.iconBox}>
+                      <Text style={styles.icon}>
+                        🔧
+                      </Text>
+                    </View>
+
+                    <View style={styles.cardContent}>
+                      <Text style={styles.cardTitle}>
+                        {reminder.judul}
+                      </Text>
+
+                      <Text style={styles.cardSubtitle}>
+                        {vehicle
+                          ? vehicle.namaKendaraan
+                          : "Kendaraan"}
+                      </Text>
+
+                      <Text style={styles.warningText}>
+                        {reminder.kilometerTarget
+                          ? `Target ${reminder.kilometerTarget.toLocaleString(
+                              "id-ID"
+                            )} km`
+                          : "Target kilometer belum diatur"}
+                      </Text>
+
+                      <Text style={styles.cardSubtitle}>
+                        {reminder.tanggal || "-"}
+                      </Text>
+                    </View>
                   </View>
-
-                  <View style={styles.cardContent}>
-                    <Text style={styles.cardTitle}>
-                      {reminder.jenis}
-                    </Text>
-
-                    <Text style={styles.cardSubtitle}>
-                      {vehicle
-                        ? vehicle.namaKendaraan
-                        : "Kendaraan"}
-                    </Text>
-
-                    <Text style={styles.warningText}>
-                      Target{" "}
-                      {reminder.targetKilometer.toLocaleString(
-                        "id-ID"
-                      )}{" "}
-                      km
-                    </Text>
-
-                    <Text style={styles.cardSubtitle}>
-                      {reminder.targetTanggal}
-                    </Text>
-                  </View>
-                </View>
-              );
-            })
+                );
+              })
           )}
         </View>
 
@@ -198,37 +219,130 @@ export default function DashboardScreen() {
             </TouchableOpacity>
           </View>
 
-          <View style={styles.serviceCard}>
-            <View style={styles.serviceInfo}>
-              <Text style={styles.cardTitle}>
-                Ganti Oli & Filter
-              </Text>
-
-              <Text style={styles.cardSubtitle}>
-                Honda Civic • 10 September 2026
+          {latestServices.length === 0 ? (
+            <View style={styles.emptyReminder}>
+              <Text style={styles.emptyReminderText}>
+                Belum ada riwayat servis
               </Text>
             </View>
+          ) : (
+            latestServices.map((service) => {
+              const vehicle = vehicles.find(
+                (item) =>
+                  String(item.id) ===
+                  String(service.kendaraanId)
+              );
 
-            <Text style={styles.price}>
-              Rp350.000
+              return (
+                <TouchableOpacity
+                  key={service.id}
+                  style={styles.serviceCard}
+                  onPress={() =>
+                    navigation.navigate(
+                      "DetailServis",
+                      {
+                        serviceId: service.id,
+                      }
+                    )
+                  }
+                >
+                  <View style={styles.serviceInfo}>
+                    <Text style={styles.cardTitle}>
+                      {service.jenisServis}
+                    </Text>
+
+                    <Text style={styles.cardSubtitle}>
+                      {vehicle
+                        ? vehicle.namaKendaraan
+                        : "Kendaraan"}{" "}
+                      • {service.tanggal}
+                    </Text>
+                  </View>
+
+                  <Text style={styles.price}>
+                    Rp
+                    {service.biaya.toLocaleString(
+                      "id-ID"
+                    )}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })
+          )}
+        </View>
+
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>
+              Pengisian BBM Terakhir
             </Text>
           </View>
 
-          <View style={styles.serviceCard}>
-            <View style={styles.serviceInfo}>
-              <Text style={styles.cardTitle}>
-                Servis Rem
-              </Text>
-
-              <Text style={styles.cardSubtitle}>
-                Toyota Avanza • 5 September 2026
+          {fuelRecords.length === 0 ? (
+            <View style={styles.emptyReminder}>
+              <Text style={styles.emptyReminderText}>
+                Belum ada data pengisian BBM
               </Text>
             </View>
+          ) : (
+            fuelRecords
+              .slice()
+              .reverse()
+              .slice(0, 3)
+              .map((record) => {
+                const vehicle = vehicles.find(
+                  (item) =>
+                    String(item.id) ===
+                    String(record.kendaraanId)
+                );
 
-            <Text style={styles.price}>
-              Rp500.000
-            </Text>
-          </View>
+                return (
+                  <View
+                    key={record.id}
+                    style={styles.fuelCard}
+                  >
+                    <View style={styles.fuelIconBox}>
+                      <Text style={styles.fuelIcon}>
+                        ⛽
+                      </Text>
+                    </View>
+
+                    <View style={styles.fuelContent}>
+                      <Text style={styles.cardTitle}>
+                        {vehicle
+                          ? vehicle.namaKendaraan
+                          : "Kendaraan"}
+                      </Text>
+
+                      <Text style={styles.cardSubtitle}>
+                        Odometer{" "}
+                        {record.kilometer.toLocaleString(
+                          "id-ID"
+                        )}{" "}
+                        km
+                      </Text>
+
+                      <Text style={styles.cardSubtitle}>
+                        {record.jumlahLiter.toFixed(
+                          2
+                        )}{" "}
+                        L × Rp
+                        {record.hargaPerLiter.toLocaleString(
+                          "id-ID"
+                        )}
+                      </Text>
+                    </View>
+
+                    <Text style={styles.fuelPrice}>
+                      Rp
+                      {record.totalHarga.toLocaleString(
+                        "id-ID"
+                      )}
+                    </Text>
+                  </View>
+                );
+              })
+          )}
         </View>
       </ScrollView>
 
@@ -238,7 +352,9 @@ export default function DashboardScreen() {
             style={styles.menuItem}
             onPress={() => {
               setMenuVisible(false);
-              navigation.navigate("TambahPengingat");
+              navigation.navigate(
+                "TambahPengingat"
+              );
             }}
           >
             <View style={styles.menuIconBox}>
@@ -256,7 +372,9 @@ export default function DashboardScreen() {
             style={styles.menuItem}
             onPress={() => {
               setMenuVisible(false);
-              navigation.navigate("TambahServis");
+              navigation.navigate(
+                "TambahServis"
+              );
             }}
           >
             <View style={styles.menuIconBox}>
@@ -274,7 +392,9 @@ export default function DashboardScreen() {
             style={styles.menuItem}
             onPress={() => {
               setMenuVisible(false);
-              navigation.navigate("TambahKendaraan");
+              navigation.navigate(
+                "TambahKendaraan"
+              );
             }}
           >
             <View style={styles.menuIconBox}>
@@ -285,6 +405,26 @@ export default function DashboardScreen() {
 
             <Text style={styles.menuText}>
               Tambah Kendaraan
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => {
+              setMenuVisible(false);
+              navigation.navigate(
+                "PilihKendaraanBBM"
+              );
+            }}
+          >
+            <View style={styles.menuIconBox}>
+              <Text style={styles.menuIcon}>
+                ⛽
+              </Text>
+            </View>
+
+            <Text style={styles.menuText}>
+              Isi BBM
             </Text>
           </TouchableOpacity>
         </View>
@@ -331,57 +471,93 @@ export default function DashboardScreen() {
                   Terlambat
                 </Text>
 
-                {dueReminders.map((reminder, index) => {
-                  const vehicle = vehicles.find(
-                    (item) =>
-                      item.id === reminder.kendaraanId
-                  );
+                {dueReminders.map(
+                  (reminder, index) => {
+                    const vehicle = vehicles.find(
+                      (item) =>
+                        String(item.id) ===
+                        String(reminder.kendaraanId)
+                    );
 
-                  const kilometerDue =
-                    vehicle &&
-                    vehicle.kilometer >=
-                      reminder.targetKilometer;
+                    const kilometerDue =
+                      vehicle &&
+                      reminder.kilometerTarget !==
+                        undefined &&
+                      reminder.kilometerTarget !==
+                        null &&
+                      vehicle.kilometer >=
+                        reminder.kilometerTarget;
 
-                  return (
-                    <View
-                      key={reminder.id}
-                      style={[
-                        styles.notificationItem,
-                        index <
-                          dueReminders.length - 1 &&
-                          styles.notificationItemBorder,
-                      ]}
-                    >
-                      <View style={styles.notificationIconBox}>
-                        <Text style={styles.notificationItemIcon}>
-                          🔧
-                        </Text>
-                      </View>
-
-                      <View style={styles.notificationItemContent}>
-                        <Text style={styles.notificationItemTitle}>
-                          {reminder.jenis}
-                        </Text>
-
-                        <Text
-                          style={styles.notificationItemVehicle}
+                    return (
+                      <View
+                        key={reminder.id}
+                        style={[
+                          styles.notificationItem,
+                          index <
+                            dueReminders.length - 1 &&
+                            styles.notificationItemBorder,
+                        ]}
+                      >
+                        <View
+                          style={
+                            styles.notificationIconBox
+                          }
                         >
-                          {vehicle
-                            ? `${vehicle.namaKendaraan} · ${vehicle.tahun}`
-                            : "Kendaraan"}
-                        </Text>
+                          <Text
+                            style={
+                              styles.notificationItemIcon
+                            }
+                          >
+                            🔧
+                          </Text>
+                        </View>
 
-                        <Text style={styles.notificationItemWarning}>
-                          {kilometerDue
-                            ? `Target jarak tercapai · ${reminder.targetKilometer.toLocaleString(
-                                "id-ID"
-                              )} km`
-                            : `Tanggal jatuh tempo · ${reminder.targetTanggal}`}
-                        </Text>
+                        <View
+                          style={
+                            styles.notificationItemContent
+                          }
+                        >
+                          <Text
+                            style={
+                              styles.notificationItemTitle
+                            }
+                          >
+                            {reminder.judul}
+                          </Text>
+
+                          <Text
+                            style={
+                              styles.notificationItemVehicle
+                            }
+                          >
+                            {vehicle
+                              ? `${vehicle.namaKendaraan} · ${vehicle.tahun}`
+                              : "Kendaraan"}
+                          </Text>
+
+                          <Text
+                            style={
+                              styles.notificationItemWarning
+                            }
+                          >
+                            {kilometerDue
+                              ? `Target jarak tercapai · ${
+                                  reminder.kilometerTarget
+                                    ? reminder.kilometerTarget.toLocaleString(
+                                        "id-ID"
+                                      )
+                                    : "-"
+                                } km`
+                              : `Tanggal jatuh tempo · ${
+                                  reminder.tanggal ||
+                                  "-"
+                                }`}
+                          </Text>
+                        </View>
                       </View>
-                    </View>
-                  );
-                })}
+                    );
+                  }
+                )}
               </>
             )}
 

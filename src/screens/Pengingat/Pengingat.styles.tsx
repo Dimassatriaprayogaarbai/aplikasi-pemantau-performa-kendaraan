@@ -105,6 +105,7 @@ const styles = StyleSheet.create({
   progressBar: {
     height: "100%",
     borderRadius: 10,
+    backgroundColor: "#F59E0B",
   },
 
   statusRow: {

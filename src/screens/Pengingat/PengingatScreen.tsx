@@ -120,10 +120,11 @@ export default function PengingatScreen() {
 
   const getServiceProgress = (
     currentKm: number,
-    targetKm: number
+    targetKm?: number
   ) => {
     if (
-      !targetKm ||
+      targetKm === undefined ||
+      targetKm === null ||
       targetKm <= 0
     ) {
       return 0;
@@ -286,25 +287,37 @@ export default function PengingatScreen() {
               const vehicle =
                 vehicles.find(
                   (item) =>
-                    item.id ===
-                    reminder.kendaraanId
+                    String(item.id) ===
+                    String(
+                      reminder.kendaraanId
+                    )
                 );
 
               if (!vehicle) {
                 return null;
               }
 
+              const targetKm =
+                reminder.kilometerTarget;
+
+              const hasTargetKm =
+                targetKm !== undefined &&
+                targetKm !== null &&
+                targetKm > 0;
+
               const progress =
                 getServiceProgress(
                   vehicle.kilometer,
-                  reminder.targetKilometer
+                  targetKm
                 );
 
               const isDue =
+                hasTargetKm &&
                 vehicle.kilometer >=
-                reminder.targetKilometer;
+                  targetKm;
 
               const isNear =
+                hasTargetKm &&
                 progress >= 0.8;
 
               const progressColor =
@@ -312,13 +325,16 @@ export default function PengingatScreen() {
                   ? "#EF4444"
                   : "#22C55E";
 
-              const statusText = isDue
-                ? "Sudah jatuh tempo"
-                : isNear
-                ? "Segera servis"
-                : `${Math.round(
-                    progress * 100
-                  )}%`;
+              const statusText =
+                !hasTargetKm
+                  ? "Pengingat aktif"
+                  : isDue
+                  ? "Sudah jatuh tempo"
+                  : isNear
+                  ? "Segera servis"
+                  : `${Math.round(
+                      progress * 100
+                    )}%`;
 
               return (
                 <TouchableOpacity
@@ -343,7 +359,7 @@ export default function PengingatScreen() {
 
                     <View style={styles.cardContent}>
                       <Text style={styles.cardTitle}>
-                        {reminder.jenis}
+                        {reminder.judul}
                       </Text>
 
                       <Text style={styles.vehicleName}>
@@ -351,33 +367,42 @@ export default function PengingatScreen() {
                       </Text>
 
                       <Text style={styles.cardDate}>
-                        Target:{" "}
-                        {reminder.targetKilometer.toLocaleString(
-                          "id-ID"
-                        )}{" "}
-                        km
+                        Tanggal:{" "}
+                        {reminder.tanggal ||
+                          "Belum diatur"}
+                      </Text>
+
+                      <Text style={styles.cardDate}>
+                        Target KM:{" "}
+                        {hasTargetKm
+                          ? `${targetKm.toLocaleString(
+                              "id-ID"
+                            )} km`
+                          : "Belum diatur"}
                       </Text>
                     </View>
                   </View>
 
-                  <View
-                    style={
-                      styles.progressBackground
-                    }
-                  >
+                  {hasTargetKm && (
                     <View
-                      style={[
-                        styles.progressBar,
-                        {
-                          width: `${
-                            progress * 100
-                          }%`,
-                          backgroundColor:
-                            progressColor,
-                        },
-                      ]}
-                    />
-                  </View>
+                      style={
+                        styles.progressBackground
+                      }
+                    >
+                      <View
+                        style={[
+                          styles.progressBar,
+                          {
+                            width: `${
+                              progress * 100
+                            }%`,
+                            backgroundColor:
+                              progressColor,
+                          },
+                        ]}
+                      />
+                    </View>
+                  )}
 
                   <View style={styles.statusRow}>
                     <Text

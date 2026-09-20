@@ -6,7 +6,10 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
+  Platform,
 } from "react-native";
+
+import DateTimePicker from "@react-native-community/datetimepicker";
 
 import {
   useNavigation,
@@ -32,8 +35,8 @@ export default function EditServisScreen() {
 
   const service = services.find(
     (item) =>
-      item.id ===
-      route.params?.serviceId
+      String(item.id) ===
+      String(route.params?.serviceId)
   );
 
   const [
@@ -61,6 +64,11 @@ export default function EditServisScreen() {
   ] = useState(
     service?.tanggal || ""
   );
+
+  const [
+    showDatePicker,
+    setShowDatePicker,
+  ] = useState(false);
 
   const [
     kilometer,
@@ -100,30 +108,103 @@ export default function EditServisScreen() {
   const selectedVehicle =
     vehicles.find(
       (vehicle) =>
-        vehicle.id === kendaraanId
+        String(vehicle.id) ===
+        String(kendaraanId)
     );
 
-  const simpanPerubahan = () => {
+  const getDateValue = () => {
+    if (!tanggal) {
+      return new Date();
+    }
+
+    const parts = tanggal.split("-");
+
+    if (parts.length === 3) {
+      const tahun = Number(parts[0]);
+      const bulan =
+        Number(parts[1]) - 1;
+      const hari = Number(parts[2]);
+
+      return new Date(
+        tahun,
+        bulan,
+        hari
+      );
+    }
+
+    return new Date();
+  };
+
+  const handleTanggalChange = (
+    event: any,
+    selectedDate?: Date
+  ) => {
+    if (Platform.OS === "android") {
+      setShowDatePicker(false);
+    }
+
+    if (selectedDate) {
+      const hari = String(
+        selectedDate.getDate()
+      ).padStart(2, "0");
+
+      const bulan = String(
+        selectedDate.getMonth() + 1
+      ).padStart(2, "0");
+
+      const tahun =
+        selectedDate.getFullYear();
+
+      setTanggal(
+        `${tahun}-${bulan}-${hari}`
+      );
+    }
+  };
+
+  const getTanggalDisplay = () => {
+    if (!tanggal) {
+      return "Pilih tanggal servis";
+    }
+
+    const bagian = tanggal.split("-");
+
+    if (bagian.length !== 3) {
+      return tanggal;
+    }
+
+    return `${bagian[2]}/${bagian[1]}/${bagian[0]}`;
+  };
+
+  const simpanPerubahan = async () => {
     if (
       !kendaraanId ||
       !jenisServis.trim() ||
-      !tanggal.trim() ||
+      !tanggal ||
       !kilometer.trim()
     ) {
       return;
     }
 
-    updateService(service.id, {
-      kendaraanId,
-      jenisServis:
-        jenisServis.trim(),
-      tanggal: tanggal.trim(),
-      kilometer: Number(kilometer),
-      biaya: Number(biaya) || 0,
-      catatan: catatan.trim(),
-    });
+    const berhasil =
+      await updateService(
+        service.id,
+        {
+          kendaraanId,
+          jenisServis:
+            jenisServis.trim(),
+          tanggal,
+          kilometer:
+            Number(kilometer),
+          biaya:
+            Number(biaya) || 0,
+          catatan:
+            catatan.trim(),
+        }
+      );
 
-    navigation.goBack();
+    if (berhasil) {
+      navigation.goBack();
+    }
   };
 
   return (
@@ -249,11 +330,37 @@ export default function EditServisScreen() {
             Tanggal Servis *
           </Text>
 
-          <TextInput
+          <TouchableOpacity
             style={styles.input}
-            value={tanggal}
-            onChangeText={setTanggal}
-          />
+            onPress={() =>
+              setShowDatePicker(true)
+            }
+          >
+            <Text
+              style={
+                tanggal
+                  ? styles.dropdownText
+                  : styles.dropdownPlaceholder
+              }
+            >
+              {getTanggalDisplay()}
+            </Text>
+          </TouchableOpacity>
+
+          {showDatePicker && (
+            <DateTimePicker
+              value={getDateValue()}
+              mode="date"
+              display={
+                Platform.OS === "ios"
+                  ? "spinner"
+                  : "default"
+              }
+              onChange={
+                handleTanggalChange
+              }
+            />
+          )}
 
           <Text style={styles.label}>
             Kilometer *

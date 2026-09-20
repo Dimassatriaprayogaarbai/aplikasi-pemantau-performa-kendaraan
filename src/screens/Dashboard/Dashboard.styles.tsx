@@ -460,6 +460,42 @@ closeButtonText: {
   fontWeight: "700",
   color: "#F59E0B",
 },
+
+fuelCard: {
+  backgroundColor: "#FFFFFF",
+  borderRadius: 14,
+  padding: 16,
+  flexDirection: "row",
+  alignItems: "center",
+  marginBottom: 12,
+  borderWidth: 1,
+  borderColor: "#EEEEEE",
+},
+
+fuelIconBox: {
+  width: 48,
+  height: 48,
+  borderRadius: 12,
+  backgroundColor: "#FFF7E6",
+  alignItems: "center",
+  justifyContent: "center",
+  marginRight: 12,
+},
+
+fuelIcon: {
+  fontSize: 22,
+},
+
+fuelContent: {
+  flex: 1,
+},
+
+fuelPrice: {
+  fontSize: 14,
+  fontWeight: "700",
+  color: "#F59E0B",
+  marginLeft: 8,
+},
 });
 
 export default styles;

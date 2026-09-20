@@ -6,7 +6,11 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
+  Platform,
+  Alert,
 } from "react-native";
+
+import DateTimePicker from "@react-native-community/datetimepicker";
 
 import styles from "./TambahPengingat.styles";
 
@@ -20,55 +24,144 @@ export default function TambahPengingatScreen({
     addReminder,
   } = useApp();
 
-  const [
-    kendaraanId,
-    setKendaraanId,
-  ] = useState("");
+  const [kendaraanId, setKendaraanId] =
+    useState("");
 
-  const [
-    dropdownVisible,
-    setDropdownVisible,
-  ] = useState(false);
+  const [dropdownVisible, setDropdownVisible] =
+    useState(false);
 
-  const [
-    jenis,
-    setJenis,
-  ] = useState("");
+  const [judul, setJudul] =
+    useState("");
 
-  const [
-    targetKilometer,
-    setTargetKilometer,
-  ] = useState("");
+  const [kilometerTarget, setKilometerTarget] =
+    useState("");
 
-  const [
-    targetTanggal,
-    setTargetTanggal,
-  ] = useState("");
+  const [tanggal, setTanggal] =
+    useState("");
+
+  const [showDatePicker, setShowDatePicker] =
+    useState(false);
+
+  const [deskripsi, setDeskripsi] =
+    useState("");
+
+  const [saving, setSaving] =
+    useState(false);
 
   const selectedVehicle =
     vehicles.find(
       (vehicle) =>
-        vehicle.id === kendaraanId
+        String(vehicle.id) ===
+        String(kendaraanId)
     );
 
-  const simpanPengingat = () => {
-    if (
-      !kendaraanId ||
-      !jenis.trim()
-    ) {
+  const formatDate = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(
+      date.getMonth() + 1
+    ).padStart(2, "0");
+    const day = String(
+      date.getDate()
+    ).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+  };
+
+  const formatDateDisplay = (
+    value: string
+  ) => {
+    if (!value) {
+      return "Pilih tanggal";
+    }
+
+    const [year, month, day] =
+      value.split("-");
+
+    if (!year || !month || !day) {
+      return value;
+    }
+
+    return `${day}/${month}/${year}`;
+  };
+
+  const handleDateChange = (
+    event: any,
+    selectedDate?: Date
+  ) => {
+    if (Platform.OS !== "web") {
+      setShowDatePicker(false);
+    }
+
+    if (selectedDate) {
+      setTanggal(
+        formatDate(selectedDate)
+      );
+    }
+  };
+
+  const simpanPengingat = async () => {
+    if (!kendaraanId) {
+      Alert.alert(
+        "Data belum lengkap",
+        "Silakan pilih kendaraan."
+      );
       return;
     }
 
-    addReminder({
-      kendaraanId,
-      jenis: jenis.trim(),
-      targetKilometer:
-        Number(targetKilometer) || 0,
-      targetTanggal:
-        targetTanggal.trim(),
-    });
+    if (!judul.trim()) {
+      Alert.alert(
+        "Data belum lengkap",
+        "Silakan isi judul pengingat."
+      );
+      return;
+    }
 
-    navigation.goBack();
+    if (!tanggal) {
+      Alert.alert(
+        "Data belum lengkap",
+        "Silakan pilih tanggal pengingat."
+      );
+      return;
+    }
+
+    try {
+      setSaving(true);
+
+      const success = await addReminder({
+        kendaraanId,
+        judul: judul.trim(),
+        tanggal,
+        kilometerTarget:
+          kilometerTarget.trim()
+            ? Number(kilometerTarget)
+            : undefined,
+        deskripsi:
+          deskripsi.trim(),
+        status: "aktif",
+      });
+
+      if (!success) {
+        Alert.alert(
+          "Gagal",
+          "Pengingat gagal disimpan ke database."
+        );
+        return;
+      }
+
+      navigation.goBack();
+    } catch (error) {
+      console.error(
+        "ERROR SIMPAN PENGINGAT:",
+        error
+      );
+
+      Alert.alert(
+        "Gagal",
+        "Terjadi kesalahan saat menyimpan pengingat."
+      );
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -144,7 +237,7 @@ export default function TambahPengingatScreen({
                     }
                     onPress={() => {
                       setKendaraanId(
-                        vehicle.id
+                        String(vehicle.id)
                       );
 
                       setDropdownVisible(
@@ -186,8 +279,8 @@ export default function TambahPengingatScreen({
             style={styles.input}
             placeholder="Contoh: Ganti Oli"
             placeholderTextColor="#999999"
-            value={jenis}
-            onChangeText={setJenis}
+            value={judul}
+            onChangeText={setJudul}
           />
 
           <Text style={styles.label}>
@@ -199,41 +292,134 @@ export default function TambahPengingatScreen({
             placeholder="Contoh: 50000"
             placeholderTextColor="#999999"
             keyboardType="numeric"
-            value={targetKilometer}
+            value={kilometerTarget}
             onChangeText={
-              setTargetKilometer
+              setKilometerTarget
             }
           />
 
           <Text style={styles.label}>
-            Tanggal Jatuh Tempo
+            Tanggal Jatuh Tempo *
+          </Text>
+
+          {Platform.OS === "web" ? (
+            <View
+              style={styles.input}
+            >
+              {React.createElement(
+                "input",
+                {
+                  type: "date",
+                  value: tanggal,
+                  onChange: (
+                    event: any
+                  ) => {
+                    setTanggal(
+                      event.target.value
+                    );
+                  },
+                  style: {
+                    width: "100%",
+                    height: "100%",
+                    border: "none",
+                    outline: "none",
+                    backgroundColor:
+                      "transparent",
+                    fontSize: 16,
+                    color: "#222222",
+                    fontFamily:
+                      "inherit",
+                  },
+                }
+              )}
+            </View>
+          ) : (
+            <>
+              <TouchableOpacity
+                style={styles.input}
+                onPress={() =>
+                  setShowDatePicker(
+                    true
+                  )
+                }
+              >
+                <Text
+                  style={
+                    tanggal
+                      ? styles.dropdownText
+                      : styles.dropdownPlaceholder
+                  }
+                >
+                  {formatDateDisplay(
+                    tanggal
+                  )}
+                </Text>
+              </TouchableOpacity>
+
+              {showDatePicker && (
+                <DateTimePicker
+                  value={
+                    tanggal
+                      ? new Date(
+                          `${tanggal}T00:00:00`
+                        )
+                      : new Date()
+                  }
+                  mode="date"
+                  display="default"
+                  onChange={
+                    handleDateChange
+                  }
+                />
+              )}
+            </>
+          )}
+
+          <Text style={styles.label}>
+            Deskripsi
           </Text>
 
           <TextInput
-            style={styles.input}
-            placeholder="Contoh: 20/09/2026"
+            style={[
+              styles.input,
+              {
+                minHeight: 90,
+                textAlignVertical:
+                  "top",
+              },
+            ]}
+            placeholder="Contoh: Servis rutin dan ganti oli"
             placeholderTextColor="#999999"
-            value={targetTanggal}
+            value={deskripsi}
             onChangeText={
-              setTargetTanggal
+              setDeskripsi
             }
+            multiline
           />
 
           <Text style={styles.helperText}>
-            Pengingat servis dapat menggunakan
+            Pengingat dapat menggunakan
             target kilometer dan tanggal.
           </Text>
 
           <TouchableOpacity
-            style={styles.saveButton}
+            style={[
+              styles.saveButton,
+              saving && {
+                opacity: 0.6,
+              },
+            ]}
             onPress={simpanPengingat}
+            disabled={saving}
           >
             <Text
               style={
                 styles.saveButtonText
               }
             >
-              Simpan Pengingat
+              {saving
+                ? "Menyimpan..."
+                : "Simpan Pengingat"}
             </Text>
           </TouchableOpacity>
 
@@ -242,6 +428,7 @@ export default function TambahPengingatScreen({
             onPress={() =>
               navigation.goBack()
             }
+            disabled={saving}
           >
             <Text
               style={

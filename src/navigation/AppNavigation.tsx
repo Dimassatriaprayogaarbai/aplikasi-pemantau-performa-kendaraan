@@ -22,6 +22,9 @@ import TambahPengingatScreen from "../screens/Pengingat/TambahPengingatScreen";
 import DetailPengingatScreen from "../screens/Pengingat/DetailPengingatScreen";
 import EditPengingatScreen from "../screens/Pengingat/EditPengingatScreen";
 
+import PilihKendaraanBBMScreen from "../screens/BBM/PilihKendaraanBBMScreen";
+import CatatBBMScreen from "../screens/BBM/CatatBBMScreen";
+
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
@@ -154,6 +157,16 @@ export default function AppNavigation() {
         <Stack.Screen
           name="EditPengingat"
           component={EditPengingatScreen}
+        />
+
+        <Stack.Screen
+          name="PilihKendaraanBBM"
+          component={PilihKendaraanBBMScreen}
+        />
+
+        <Stack.Screen
+          name="CatatBBM"
+          component={CatatBBMScreen}
         />
       </Stack.Navigator>
     </NavigationContainer>
